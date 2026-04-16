@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 // Get configurations
                 const config = vscode.workspace.getConfiguration('contextra');
-                const apiUrl = config.get<string>('apiUrl', 'http://localhost:3000/api/optimize');
+                const apiUrl = config.get<string>('apiUrl', 'https://contextra.vercel.app/api/optimize');
                 const activeRepoId = config.get<string>('activeRepoId', '');
                 const authToken = config.get<string>('authToken', '');
                 const previewBeforeReplace = config.get<boolean>('previewBeforeReplace', true);
