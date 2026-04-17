@@ -1,21 +1,65 @@
 {
   "name": "contextra",
-  "displayName": "contextra",
-  "description": "Contextra reads your prompt’s intent and auto-injects only the relevant slices of your codebase — cutting token costs and making AI outputs dramatically more precise.",
-  "version": "0.0.1",
+  "displayName": "Contextra",
+  "description": "Contextra reads your prompt's intent and auto-injects only the relevant slices of your codebase — cutting token costs and making AI outputs dramatically more precise.",
+  "version": "0.1.0",
+  "publisher": "contextra",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/contextra/contextra-vscode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/contextra/contextra-vscode/issues"
+  },
+  "homepage": "https://github.com/contextra/contextra-vscode#readme",
+  "keywords": [
+    "ai",
+    "prompt",
+    "context",
+    "llm",
+    "tokens",
+    "optimization",
+    "copilot"
+  ],
   "engines": {
     "vscode": "^1.115.0"
   },
   "categories": [
+    "AI",
     "Other"
   ],
-  "activationEvents": [],
+  "galleryBanner": {
+    "color": "#0A1F44",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "contextra.optimizePrompt",
         "title": "Contextra: Optimize Prompt"
+      },
+      {
+        "command": "contextra.connect",
+        "title": "Contextra: Connect Account",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "contextra.signOut",
+        "title": "Contextra: Sign Out",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "contextra.showStatus",
+        "title": "Contextra: Show Status"
+      },
+      {
+        "command": "contextra.focusView",
+        "title": "Contextra: Focus View"
       }
     ],
     "keybindings": [
@@ -26,23 +70,58 @@
         "when": "editorTextFocus"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "contextra",
+          "title": "Contextra",
+          "icon": "media/contextra.svg"
+        }
+      ]
+    },
+    "views": {
+      "contextra": [
+        {
+          "id": "contextra.view",
+          "name": "Contextra",
+          "icon": "media/contextra.svg",
+          "contextualTitle": "Contextra"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "contextra.view",
+        "contents": "Welcome to Contextra.\n\nContextra attaches just the relevant slice of your repo to every prompt — cutting tokens, sharpening answers.\n\n[Connect Account](command:contextra.connect)\n\nAfter signing in on the web, paste the token back here when prompted.\n\n[Show Status](command:contextra.showStatus)",
+        "when": "!contextra.isAuthenticated"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "contextra.connect",
+          "when": "view == contextra.view && !contextra.isAuthenticated",
+          "group": "navigation"
+        },
+        {
+          "command": "contextra.signOut",
+          "when": "view == contextra.view && contextra.isAuthenticated",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Contextra",
       "properties": {
-        "contextra.apiUrl": {
+        "contextra.apiBaseUrl": {
           "type": "string",
-          "default": "http://localhost:3000/api/optimize",
-          "description": "API Endpoint for optimizing prompts."
+          "default": "http://localhost:3000/api",
+          "description": "Base URL for the Contextra API. The extension calls POST {base}/optimize and GET {base}/health."
         },
-        "contextra.activeRepoId": {
+        "contextra.webUrl": {
           "type": "string",
-          "default": "",
-          "description": "The active Repository ID to use for optimizations via Contextra API."
-        },
-        "contextra.authToken": {
-          "type": "string",
-          "default": "",
-          "description": "Authentication token (if required) to pass as Authorization Bearer."
+          "default": "http://localhost:3000",
+          "description": "Base URL for the Contextra web app. Used to open the login page when connecting your account."
         },
         "contextra.previewBeforeReplace": {
           "type": "boolean",
@@ -57,6 +136,8 @@
     "compile": "webpack",
     "watch": "webpack --watch",
     "package": "webpack --mode production --devtool hidden-source-map",
+    "package-vsix": "npx vsce package --out contextra.vsix --allow-missing-repository --no-dependencies",
+    "install-local": "npm run package && npm run package-vsix && code --install-extension contextra.vsix --force",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
@@ -74,6 +155,7 @@
     "webpack": "^5.105.3",
     "webpack-cli": "^6.0.1",
     "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.2.1"
   }
 }

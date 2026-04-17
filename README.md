@@ -1,71 +1,63 @@
-# contextra README
+# Contextra
 
-This is the README for your extension "contextra". After writing up a brief description, we recommend including the following sections.
+Contextra reads your prompt's intent and auto-injects only the relevant slices of your codebase — cutting token costs and making AI outputs dramatically more precise.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Zero-config.** Open any Git workspace — Contextra detects the repo, registers a session with the backend, and stores a token securely. No manual URL copying, no manual token setup.
+- **One shortcut.** Select a prompt (or copy it to your clipboard) and press **Ctrl+Shift+O** (⌘⇧O on macOS). Contextra attaches the active file's relevant context, calls the optimizer, and replaces the selection / copies the result.
+- **Offline fallback.** If the backend is unreachable, Contextra still returns a locally-assembled prompt with the file context baked in, so your flow never blocks.
+- **Status at a glance.** A status-bar item shows `$(check) Contextra` when connected, `$(plug) Contextra: Offline` when not. Click it to reconnect.
 
-For example if there is an image subfolder under your extension project workspace:
+## Usage
 
-\!\[feature X\]\(images/feature-x.png\)
+1. Open a workspace folder (Git recommended — Contextra uses the `origin` remote URL as the stable repo fingerprint).
+2. On first activation, Contextra POSTs to `${apiBaseUrl}/session` with your `machineId` and repo metadata; the server returns a token and `repoId`. Token is stored in VS Code's encrypted `SecretStorage`; `repoId` in workspace state.
+3. Write or copy a prompt. Either select it in the editor or keep it on your clipboard.
+4. Press **Ctrl+Shift+O** (⌘⇧O). The extension sends `{ repoId, rawPrompt, fileContext }` to `${apiBaseUrl}/optimize` with a Bearer token. The optimized result replaces your selection or lands on your clipboard.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+### Commands
 
-## Requirements
+| Command                    | Description                                                   |
+| -------------------------- | ------------------------------------------------------------- |
+| `Contextra: Optimize Prompt` | Optimize the selected text (or clipboard). Default: Ctrl+Shift+O. |
+| `Contextra: Connect`       | Re-run the session bootstrap against the current `apiBaseUrl`. |
+| `Contextra: Sign Out`      | Clear the stored token and repo ID for this workspace.        |
+| `Contextra: Show Status`   | Modal summary of current session state.                       |
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## Settings
 
-## Extension Settings
+| Setting                       | Default                        | Purpose                                                   |
+| ----------------------------- | ------------------------------ | --------------------------------------------------------- |
+| `contextra.apiBaseUrl`        | `http://localhost:3000/api`    | Base URL for the Contextra backend.                       |
+| `contextra.previewBeforeReplace` | `true`                      | Show a preview dialog before replacing the selected text. |
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+Token and repo ID are **not** settings — they are managed automatically per workspace.
 
-For example:
+## Backend contract
 
-This extension contributes the following settings:
+Contextra expects three HTTP endpoints rooted at `apiBaseUrl`:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- `POST /session`
+  - Request: `{ machineId: string, repo: { url: string, name: string, fingerprint: string } }`
+  - Response: `{ token: string, repoId: string }`
+- `POST /optimize` (requires `Authorization: Bearer <token>`)
+  - Request: `{ repoId: string, rawPrompt: string, fileContext: { relPath, language, startLine, endLine, snippet } | null }`
+  - Response: `{ optimizedPrompt: string, tokensUsed?: number, originalTokensEstimate?: number }`
+- `GET /health`
+  - Response: any 2xx means "reachable".
 
-## Known Issues
+If `POST /optimize` returns 401 or 403, the extension clears its token and re-bootstraps once before falling back.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## Development
 
-## Release Notes
+```bash
+npm install
+npm run compile      # or: npm run watch
+```
 
-Users appreciate release notes as you update your extension.
+Press **F5** inside VS Code with this repo open to launch the Extension Development Host.
 
-### 1.0.0
+## License
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+MIT — see [LICENSE](LICENSE).
