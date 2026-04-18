@@ -161,67 +161,73 @@ class ContextraClient {
     }
 
     async connect(): Promise<void> {
-        const loginUrl = vscode.Uri.parse(`${this.webUrl}/login?source=vscode`);
-        await vscode.env.openExternal(loginUrl);
+        this.setState({ status: 'connecting' });
 
-        const token = await vscode.window.showInputBox({
-            title: 'Contextra — Paste your API token',
-            prompt: `Sign in and connect a repository at ${this.webUrl}, then paste your token here.`,
-            password: true,
-            ignoreFocusOut: true,
-            placeHolder: 'ctxt_...'
-        });
+        const publisher = this.ctx.extension.packageJSON.publisher || 'contextra';
+        const name = this.ctx.extension.packageJSON.name || 'contextra';
+        const callbackUri = await vscode.env.asExternalUri(
+            vscode.Uri.parse(`${vscode.env.uriScheme}://${publisher}.${name}/auth`)
+        );
 
-        if (!token || !token.trim()) {
-            vscode.window.showInformationMessage('Contextra: Connect cancelled.');
+        const bridgeUrl = vscode.Uri.parse(
+            `${this.webUrl}/vscode-connect?callback=${encodeURIComponent(callbackUri.toString(true))}`
+        );
+
+        const opened = await vscode.env.openExternal(bridgeUrl);
+        if (!opened) {
+            this.setState({
+                status: 'unauthenticated',
+                message: 'Could not open browser.'
+            });
+            vscode.window.showErrorMessage(
+                'Contextra: Could not open your browser. Please open it manually.'
+            );
             return;
         }
 
+        vscode.window.showInformationMessage(
+            'Contextra: Finish signing in your browser — VS Code will pick up the session automatically.'
+        );
+    }
+
+    async finishAuth(token: string, repoId: string, repoName?: string): Promise<void> {
         const cleanToken = token.trim();
-        this.setState({ status: 'connecting', token: cleanToken });
+        const cleanRepoId = repoId.trim();
 
-        try {
-            const res = await fetch(`${this.apiBaseUrl}/me`, {
-                method: 'GET',
-                headers: { Authorization: `Bearer ${cleanToken}` }
-            });
-
-            if (res.status === 401 || res.status === 403) {
-                throw new Error('Token rejected by server.');
-            }
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status} ${res.statusText}`);
-            }
-
-            const data = (await res.json()) as { repoId?: string; repoName?: string };
-            if (!data.repoId) {
-                throw new Error(
-                    `Token is valid but no repository is connected to it. Open ${this.webUrl} and link a repo to your account first.`
-                );
-            }
-
-            await this.ctx.secrets.store(TOKEN_SECRET_KEY, cleanToken);
-            await this.ctx.workspaceState.update(REPO_STATE_KEY, data.repoId);
-            await this.ctx.workspaceState.update(REPO_NAME_STATE_KEY, data.repoName || data.repoId);
-
-            this.setState({
-                status: 'online',
-                token: cleanToken,
-                repoId: data.repoId,
-                repoName: data.repoName
-            });
-            vscode.window.showInformationMessage(
-                `Contextra: Connected (${data.repoName || data.repoId}).`
-            );
-        } catch (err: any) {
+        if (!cleanToken || !cleanRepoId) {
             this.setState({
                 status: 'unauthenticated',
-                message: err?.message || String(err)
+                message: 'Callback missing token or repoId.'
             });
             vscode.window.showErrorMessage(
-                `Contextra: Connection failed — ${err?.message || err}`
+                'Contextra: Sign-in callback was incomplete. Please try again.'
             );
+            return;
         }
+
+        await this.ctx.secrets.store(TOKEN_SECRET_KEY, cleanToken);
+        await this.ctx.workspaceState.update(REPO_STATE_KEY, cleanRepoId);
+        await this.ctx.workspaceState.update(REPO_NAME_STATE_KEY, repoName || cleanRepoId);
+
+        this.setState({
+            status: 'connecting',
+            token: cleanToken,
+            repoId: cleanRepoId,
+            repoName
+        });
+
+        const reachable = await this.healthCheck();
+        this.setState({
+            status: reachable ? 'online' : 'offline',
+            token: cleanToken,
+            repoId: cleanRepoId,
+            repoName,
+            message: reachable ? undefined : `Server ${this.apiBaseUrl} unreachable`
+        });
+
+        vscode.window.showInformationMessage(
+            `Contextra: Connected (${repoName || cleanRepoId}).`
+        );
     }
 
     async signOut(): Promise<void> {
@@ -499,6 +505,21 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(treeView);
 
     void client.restore();
+
+    context.subscriptions.push(
+        vscode.window.registerUriHandler({
+            handleUri(uri: vscode.Uri) {
+                if (uri.path !== '/auth') {
+                    return;
+                }
+                const query = new URLSearchParams(uri.query);
+                const token = query.get('token') || '';
+                const repoId = query.get('repoId') || '';
+                const repoName = query.get('repoName') || undefined;
+                void client.finishAuth(token, repoId, repoName);
+            }
+        })
+    );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('contextra.connect', () => client.connect()),

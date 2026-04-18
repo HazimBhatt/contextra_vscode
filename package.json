@@ -92,7 +92,7 @@
     "viewsWelcome": [
       {
         "view": "contextra.view",
-        "contents": "Welcome to Contextra.\n\nContextra attaches just the relevant slice of your repo to every prompt — cutting tokens, sharpening answers.\n\n[Connect Account](command:contextra.connect)\n\nAfter signing in on the web, paste the token back here when prompted.\n\n[Show Status](command:contextra.showStatus)",
+        "contents": "Welcome to Contextra.\n\nContextra attaches just the relevant slice of your repo to every prompt — cutting tokens, sharpening answers.\n\n[Connect Account](command:contextra.connect)\n\nYour browser will open to sign you in — VS Code picks up the session automatically. No token pasting.\n\n[Show Status](command:contextra.showStatus)",
         "when": "!contextra.isAuthenticated"
       }
     ],
