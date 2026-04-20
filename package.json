@@ -2,17 +2,18 @@
   "name": "contextra",
   "displayName": "Contextra",
   "description": "Contextra reads your prompt's intent and auto-injects only the relevant slices of your codebase — cutting token costs and making AI outputs dramatically more precise.",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "publisher": "contextra",
+  "icon": "media/logo.png",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/fab-c14/contextra_vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/contextra/contextra-vscode/issues"
+    "url": "https://github.com/fab-c14/contextra_vscode/issues"
   },
-  "homepage": "https://github.com/contextra/contextra-vscode#readme",
+  "homepage": "https://github.com/fab-c14/contextra_vscode#readme",
   "keywords": [
     "ai",
     "prompt",

@@ -2,98 +2,67 @@
 
 Contextra reads your prompt's intent and auto-injects only the relevant slices of your codebase — cutting token costs and making AI outputs dramatically more precise.
 
-## How it works
+## Why Contextra?
 
-1. You sign in on the Contextra **web dashboard** and link a repository to your account there.
-2. The dashboard issues you an API **token** that is already bound to your chosen repository — the VS Code extension never guesses which repo you mean.
-3. The extension stores that token securely and calls the backend with it. The server answers "which repo does this token belong to?" and all subsequent optimize calls are scoped to that repo automatically.
+Stop pasting entire files or massive unoptimized code snippets into AI chats. Contextra analyzes what you're trying to achieve and automatically pairs your prompt with the most relevant context from your linked repository, lowering token usage and generating drastically more accurate AI responses.
 
-You change the repo binding from the dashboard, not from VS Code.
+## Key Features
 
-## First-time setup
+- **Automatic Context Injection:** AI gets exactly what it needs, none of what it doesn't.
+- **Secure Authentication:** Seamlessly log in via the web dashboard. Your authentication stays securely managed by the OS keychain—never stored in plaintext workspace settings.
+- **Preview Before Replacing:** Ensure the assembled prompt and context are exactly what you want before it enters your AI workflow.
+- **High-Performance Fallback:** If you go offline, Contextra scales back gracefully to local file context processing to keep you moving.
 
-1. Install the extension (see **Install** below).
-2. Click the **Contextra** shield icon in the left activity bar. The welcome view shows a **Connect Account** button.
-3. Click **Connect Account**. Your browser opens `${contextra.webUrl}/vscode-connect?callback=vscode://contextra.contextra/auth`.
-4. Sign in on the dashboard if you aren't already, and make sure a repository is marked active.
-5. The bridge page reads your session cookie, calls `/api/vscode-auth` server-side, and redirects back to VS Code via the `vscode://` URI handler with `?token=…&repoId=…&repoName=…`.
-6. The extension stores the token in SecretStorage and the repo in workspaceState. The sidebar switches to the connected view. No token pasting.
+## Getting Started
 
-## Daily use
+1. Click the **Contextra** shield icon in the VS Code Activity Bar.
+2. Click **Connect Account**. This will open your browser to the Contextra Dashboard.
+3. Sign in and ensure your active repository is selected.
+4. VS Code will automatically connect and load your session. You're ready to optimize!
 
-1. Select your prompt in the editor (or copy it to your clipboard).
-2. Press **Ctrl+Shift+O** (⌘⇧O on macOS), or click **Optimize Prompt** in the Contextra sidebar.
-3. The extension sends `{ rawPrompt, fileContext, repoId }` to `${apiBaseUrl}/optimize` with your Bearer token, previews the optimized prompt, and either replaces your selection or copies to clipboard.
+## Daily Use
 
-If the server is unreachable, Contextra falls back to a locally-assembled prompt (file context + your text) so the flow never blocks.
-
-## How storage works
-
-| What              | Where stored                              | Lifecycle                                         |
-| ----------------- | ----------------------------------------- | ------------------------------------------------- |
-| API token         | VS Code **SecretStorage** (OS keychain)   | Cleared by `Contextra: Sign Out` or invalid-token. |
-| Repo ID + name    | VS Code **workspaceState** (per-folder)   | Cleared by `Contextra: Sign Out`.                 |
-| `apiBaseUrl`, `webUrl`, `previewBeforeReplace` | User/Workspace **settings.json** | You manage these in VS Code settings.             |
-
-The token **never** lands in `settings.json` or in your Git repo. `SecretStorage` is encrypted by the OS (Windows Credential Manager / macOS Keychain / libsecret on Linux).
-
-Legacy `contextra.authToken` and `contextra.activeRepoId` settings from earlier versions are auto-migrated into SecretStorage / workspaceState on first activation; you can then remove them from `settings.json`.
+1. Type out your prompt in the editor and highlight it.
+2. Press **Ctrl+Shift+O** (or **Cmd+Shift+O** on macOS), or click the **Optimize Prompt** button in the sidebar.
+3. A preview window will show the optimized codebase context layered perfectly with your prompt.
+4. Accept the changes to either replace your selection or copy it straight to your clipboard, ready for your favorite LLM chat.
 
 ## Commands
 
-| Command                       | Default shortcut | Description                                         |
-| ----------------------------- | ---------------- | --------------------------------------------------- |
-| `Contextra: Optimize Prompt`  | Ctrl+Shift+O     | Optimize the selected text (or clipboard content).  |
-| `Contextra: Connect Account`  | —                | Open the login page and paste a token back.        |
-| `Contextra: Sign Out`         | —                | Clear token + repo from this workspace.             |
-| `Contextra: Show Status`      | —                | Modal showing current session state.                |
-| `Contextra: Focus View`       | —                | Jump to the Contextra sidebar.                      |
+| Command | Default Shortcut | Description |
+| --- | --- | --- |
+| `Contextra: Optimize Prompt` | `Ctrl+Shift+O` | Build and inject context for your selected text. |
+| `Contextra: Connect Account` | — | Securely log into your account. |
+| `Contextra: Sign Out` | — | Remove local session securely. |
+| `Contextra: Show Status` | — | Display current connection and active repository. |
+| `Contextra: Select Active Repository` | — | Refresh or set the context scope to another linked project. |
 
-## Settings
+## Extension Settings
 
-| Key                               | Default                       | Purpose                                                          |
-| --------------------------------- | ----------------------------- | ---------------------------------------------------------------- |
-| `contextra.apiBaseUrl`            | `http://localhost:3000/api`   | Base URL for the API (`/me`, `/optimize`, `/health`).            |
-| `contextra.webUrl`                | `http://localhost:3000`       | Web dashboard base URL (used to open `/sign-in`).                  |
-| `contextra.previewBeforeReplace`  | `true`                        | Show a preview dialog before replacing the selection.            |
+You can customize your experience in VS Code Settings:
 
-## Backend contract
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `contextra.previewBeforeReplace` | `true` | When true, asks for your confirmation before replacing your selected text with the optimized prompt. |
+| `contextra.apiBaseUrl` | `https://www.contextra.xyz/api` | The backend API used by Contextra. |
+| `contextra.webUrl` | `https://www.contextra.xyz` | The web dashboard URL. |
 
-Endpoints used by the extension:
+## Build & Install
 
-- **`GET {webUrl}/vscode-connect?callback=vscode://...`** — browser-side bridge page. Reads the user's session cookie and redirects to the VS Code callback URI with `?token=…&repoId=…&repoName=…`.
-- **`GET {webUrl}/api/vscode-auth`** — cookie-authenticated endpoint the bridge page calls. Returns `{ token, repoId, repoName }` based on the user's session + their currently-active repo.
-- **`POST {apiBaseUrl}/optimize`** — `Authorization: Bearer <token>` → request `{ repoId, rawPrompt, fileContext | null }`, response `{ optimizedPrompt, tokensUsed?, originalTokensEstimate? }`.
-- **`GET {apiBaseUrl}/health`** — any 2xx means reachable.
-
-A 401/403 on `/optimize` signs the user out locally and shows a reconnect prompt.
-
-## Install
-
-Build and install into your regular VS Code (no Extension Development Host):
+If you are building the extension from source, you can generate and install the `.vsix` file directly into VS Code by running:
 
 ```bash
 npm install
 npm run install-local
 ```
 
-`install-local` packages a `.vsix` and installs it via the `code` CLI. If the `code` CLI isn't on PATH, do it manually:
+This automates the process of creating the production-ready extension package (`.vsix`) and submitting it to your local VS Code instance.
 
-```bash
-npm install
-npm run package-vsix        # produces contextra.vsix
-```
+## Support & Feedback
 
-Then in VS Code: **Ctrl+Shift+P → Extensions: Install from VSIX...** → pick `contextra.vsix` → **Reload Window**.
+Encountering issues or have feature requests? Please file an issue on our [GitHub repository](https://github.com/contextra/contextra-vscode/issues).
 
-## Development
-
-```bash
-npm install
-npm run watch     # webpack watch mode
-```
-
-Press **F5** to launch an Extension Development Host for iteration. For installed-in-real-VS-Code testing, use `npm run install-local`.
+---
 
 ## License
 
