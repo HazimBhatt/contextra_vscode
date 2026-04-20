@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/contextra/contextra-vscode.git"
+    "url": ""
   },
   "bugs": {
     "url": "https://github.com/contextra/contextra-vscode/issues"
@@ -30,7 +30,7 @@
     "Other"
   ],
   "galleryBanner": {
-    "color": "#0A1F44",
+    "color": "#0f0f0f",
     "theme": "dark"
   },
   "activationEvents": [
@@ -60,6 +60,21 @@
       {
         "command": "contextra.focusView",
         "title": "Contextra: Focus View"
+      },
+      {
+        "command": "contextra.selectRepo",
+        "title": "Contextra: Select Active Repository",
+        "icon": "$(repo)"
+      },
+      {
+        "command": "contextra.pasteCallback",
+        "title": "Contextra: Paste Sign-In Callback URL",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "contextra.cancelConnect",
+        "title": "Contextra: Cancel Sign-In",
+        "icon": "$(close)"
       }
     ],
     "keybindings": [
@@ -92,7 +107,7 @@
     "viewsWelcome": [
       {
         "view": "contextra.view",
-        "contents": "Welcome to Contextra.\n\nContextra attaches just the relevant slice of your repo to every prompt — cutting tokens, sharpening answers.\n\n[Connect Account](command:contextra.connect)\n\nYour browser will open to sign you in — VS Code picks up the session automatically. No token pasting.\n\n[Show Status](command:contextra.showStatus)",
+        "contents": "$(rocket) **Contextra**\n\nAttaches just the slice of your repo that matters to every prompt — fewer tokens, sharper answers.\n\n[$(sign-in) Connect Account](command:contextra.connect)\n\nSign in once in your browser — the extension picks up the session automatically.\n\nIf the browser redirect doesn't reach VS Code:\n\n[$(clippy) Paste Callback URL](command:contextra.pasteCallback)\n\n[$(info) Show Status](command:contextra.showStatus)",
         "when": "!contextra.isAuthenticated"
       }
     ],
@@ -104,25 +119,20 @@
           "group": "navigation"
         },
         {
+          "command": "contextra.selectRepo",
+          "when": "view == contextra.view && contextra.isAuthenticated",
+          "group": "navigation@1"
+        },
+        {
           "command": "contextra.signOut",
           "when": "view == contextra.view && contextra.isAuthenticated",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ]
     },
     "configuration": {
       "title": "Contextra",
       "properties": {
-        "contextra.apiBaseUrl": {
-          "type": "string",
-          "default": "http://localhost:3000/api",
-          "description": "Base URL for the Contextra API. The extension calls POST {base}/optimize and GET {base}/health."
-        },
-        "contextra.webUrl": {
-          "type": "string",
-          "default": "http://localhost:3000",
-          "description": "Base URL for the Contextra web app. Used to open the login page when connecting your account."
-        },
         "contextra.previewBeforeReplace": {
           "type": "boolean",
           "default": true,
@@ -145,17 +155,17 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.115.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "typescript-eslint": "^8.56.1",
-    "eslint": "^9.39.3",
-    "typescript": "^5.9.3",
-    "ts-loader": "^9.5.4",
-    "webpack": "^5.105.3",
-    "webpack-cli": "^6.0.1",
+    "@types/node": "^22.19.17",
+    "@types/vscode": "^1.115.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.2.1"
+    "@vscode/vsce": "^3.2.1",
+    "eslint": "^9.39.3",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+    "webpack": "^5.105.3",
+    "webpack-cli": "^6.0.1"
   }
 }

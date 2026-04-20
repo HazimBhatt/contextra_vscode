@@ -4,3 +4,6 @@ node_modules
 .vscode-test/
 *.vsix
 .claude
+/node_modules
+.vscode-test
+node_modules/*

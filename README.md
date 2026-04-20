@@ -98,3 +98,5 @@ Press **F5** to launch an Extension Development Host for iteration. For installe
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
